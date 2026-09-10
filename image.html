@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Viewer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      max-width: 900px;
+      width: 100%;
+      padding: 30px;
+      text-align: center;
+    }
+    .image-container {
+      margin-bottom: 24px;
+    }
+    .image-container img {
+      max-width: 100%;
+      max-height: 60vh;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+    .caption-section {
+      min-height: 60px;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      margin-top: 20px;
+    }
+    .caption {
+      font-size: 1.1rem;
+      color: #333;
+      line-height: 1.5;
+    }
+    .error {
+      color: #d32f2f;
+      font-size: 1rem;
+    }
+    .loading {
+      color: #666;
+      font-size: 1rem;
+    }
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: #1976d2;
+      text-decoration: none;
+      font-size: 1rem;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="image-container">
+      <img id="displayImage" src="" alt="Loading...">
+    </div>
+    
+    <div class="caption-section">
+      <div id="captionDisplay" class="loading">...</div>
+    </div>
+    
+    <a href="index.html" class="back-link">← Back to Gallery</a>
+  </div>
+
+  <script>
+    // Get image URL from query parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const imageUrl = urlParams.get('url');
+    const imageTitle = urlParams.get('title') || 'Image';
+    
+    // Set the image source
+    const displayImage = document.getElementById('displayImage');
+    displayImage.src = imageUrl;
+    displayImage.alt = imageTitle;
+    
+    // Document title
+    document.title = imageTitle;
+    
+    // Fetch AI caption from backend
+    async function fetchCaption() {
+      const captionDisplay = document.getElementById('captionDisplay');
+      
+      try {
+        const response = await fetch('/api/describe-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ imageUrl }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          captionDisplay.className = 'error';
+          captionDisplay.textContent = 'Error: ' + data.error;
+        } else if (data.caption) {
+          captionDisplay.className = 'caption';
+          captionDisplay.textContent = data.caption;
+        } else {
+          captionDisplay.className = 'error';
+          captionDisplay.textContent = 'No caption generated.';
+        }
+      } catch (error) {
+        captionDisplay.className = 'error';
+        captionDisplay.textContent = 'Failed to connect to AI service.';
+      }
+    }
+    
+    // Start fetching caption when page loads
+    fetchCaption();
+  </script>
+</body>
+</html>
