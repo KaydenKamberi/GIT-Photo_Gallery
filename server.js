@@ -53,7 +53,7 @@ app.post('/api/describe-image', async (req, res) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.2-11b-vision',
+        model: 'llava-1.5-7b',
         messages: [
           {
             role: 'user',
