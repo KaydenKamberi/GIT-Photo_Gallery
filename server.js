@@ -54,6 +54,7 @@ app.post('/api/describe-image', async (req, res) => {
       },
       body: JSON.stringify({
         model: 'qwen/qwen3.6-27b',
+        reasoning: false,
         messages: [
           {
             role: 'user',
