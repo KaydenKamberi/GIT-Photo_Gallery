@@ -58,7 +58,7 @@ app.post('/api/describe-image', async (req, res) => {
           {
             role: 'user',
             content: [
-              { type: 'text', text: 'Write a short caption for this image.' },
+              { type: 'text', text: 'Write ONLY a short caption for this flower image. Include the flower name and a brief description. Do not include thinking, reasoning, analysis, or any other text. Just the caption.' },
               { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
             ]
           }
