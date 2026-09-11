@@ -47,7 +47,7 @@ app.post('/api/describe-image', async (req, res) => {
 
     // Call Google AI Studio API (Gemini 1.5 Flash)
     const googleResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${googleApiKey}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${googleApiKey}`,
       {
         method: 'POST',
         headers: {
