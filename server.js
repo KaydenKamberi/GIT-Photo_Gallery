@@ -18,7 +18,7 @@ app.use('/api/*', (req, res, next) => {
   next();
 });
 
-// Google AI Studio API endpoint for image description
+// Groq API endpoint for image description
 app.post('/api/describe-image', async (req, res) => {
   try {
     const { imageUrl } = req.body;
@@ -27,10 +27,10 @@ app.post('/api/describe-image', async (req, res) => {
       return res.status(400).json({ error: 'Image URL is required' });
     }
 
-    const googleApiKey = process.env.GOOGLE_AI_API_KEY;
-    if (!googleApiKey) {
+    const groqApiKey = process.env.GROQ_API_KEY;
+    if (!groqApiKey) {
       return res.status(500).json({ 
-        error: 'Server not configured with Google AI API key' 
+        error: 'Server not configured with Groq API key' 
       });
     }
 
@@ -45,44 +45,39 @@ app.post('/api/describe-image', async (req, res) => {
     const imageBuffer = await imageResponse.arrayBuffer();
     const base64Image = Buffer.from(imageBuffer).toString('base64');
 
-    // Call Google AI Studio API (Gemini 1.5 Flash)
-    const googleResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${googleApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: "Write a short, descriptive caption for this image." },
-              {
-                inlineData: {
-                  mimeType: "image/jpeg",
-                  data: base64Image
-                }
-              }
+    // Call Groq API with Llama 3.2 11B Vision
+    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${groqApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llava-1.5-7b',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Write a short caption for this image.' },
+              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
             ]
-          }],
-          generationConfig: {
-            maxOutputTokens: 100,
-            temperature: 0.7,
-          },
-        }),
-      }
-    );
+          }
+        ],
+        max_tokens: 100,
+        temperature: 0.7,
+      }),
+    });
 
-    if (!googleResponse.ok) {
-      const errorData = await googleResponse.json();
-      console.error('Google AI API error:', errorData);
+    if (!groqResponse.ok) {
+      const errorData = await groqResponse.json();
+      console.error('Groq API error:', errorData);
       return res.status(500).json({ 
-        error: 'Google AI API error: ' + (errorData.error?.message || JSON.stringify(errorData))
+        error: 'Groq API error: ' + (errorData.error?.message || 'Unknown error') 
       });
     }
 
-    const data = await googleResponse.json();
-    const caption = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    const data = await groqResponse.json();
+    const caption = data.choices[0]?.message?.content?.trim() || '';
     
     res.json({ caption });
     
