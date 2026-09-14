@@ -53,19 +53,20 @@ app.post('/api/describe-image', async (req, res) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'qwen/qwen3.6-27b',
-        reasoning: false,
+        model: process.env.GROQ_MODEL || 'qwen/qwen3.6-27b',
+        reasoning_effort: 'none',
+        reasoning_format: 'hidden',
         messages: [
           {
             role: 'user',
             content: [
-              { type: 'text', text: 'Write ONLY a short caption for this flower image. Include the flower name and a brief description. Do not include thinking, reasoning, analysis, or any other text. Just the caption.' },
+              { type: 'text', text: 'Write a one-sentence caption for this flower image. Name the flower, then briefly describe its appearance. Output only the caption.' },
               { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
             ]
           }
         ],
-        max_tokens: 100,
-        temperature: 0.7,
+        max_tokens: 150,
+        temperature: 0.3,
       }),
     });
 
@@ -78,7 +79,8 @@ app.post('/api/describe-image', async (req, res) => {
     }
 
     const data = await groqResponse.json();
-    const caption = data.choices[0]?.message?.content?.trim() || '';
+    const raw = data.choices[0]?.message?.content || '';
+    const caption = raw.replace(/^[\s\S]*<\/think>/, '').trim();
     
     res.json({ caption });
     
