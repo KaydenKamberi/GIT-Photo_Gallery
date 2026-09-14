@@ -1,8 +1,35 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Cache file path
+const CACHE_FILE = path.join(__dirname, 'descriptions.json');
+
+// Helper to read cache
+function readCache() {
+  try {
+    if (!fs.existsSync(CACHE_FILE)) {
+      return {};
+    }
+    const data = fs.readFileSync(CACHE_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading cache:', error);
+    return {};
+  }
+}
+
+// Helper to write cache
+function writeCache(cache) {
+  try {
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), 'utf8');
+  } catch (error) {
+    console.error('Error writing cache:', error);
+  }
+}
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -25,6 +52,12 @@ app.post('/api/describe-image', async (req, res) => {
     
     if (!imageUrl) {
       return res.status(400).json({ error: 'Image URL is required' });
+    }
+
+    // Check cache first
+    const cache = readCache();
+    if (cache[imageUrl]) {
+      return res.json({ caption: cache[imageUrl] });
     }
 
     const groqApiKey = process.env.GROQ_API_KEY;
@@ -81,6 +114,10 @@ app.post('/api/describe-image', async (req, res) => {
     const data = await groqResponse.json();
     const raw = data.choices[0]?.message?.content || '';
     const caption = raw.replace(/^[\s\S]*<\/think>/, '').trim();
+
+    // Update cache
+    cache[imageUrl] = caption;
+    writeCache(cache);
     
     res.json({ caption });
     
