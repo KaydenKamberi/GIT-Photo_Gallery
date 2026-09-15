@@ -1,8 +1,44 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Cache file path
+const CACHE_FILE = path.join(__dirname, 'descriptions.json');
+
+// Helper to read cache
+function readCache() {
+  try {
+    if (!fs.existsSync(CACHE_FILE)) {
+      return {};
+    }
+    const data = fs.readFileSync(CACHE_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading cache:', error);
+    return {};
+  }
+}
+
+// Helper to write cache
+// Writes to a temp file then renames: rename is atomic, so a crash mid-write
+// can't leave behind truncated JSON that readCache would discard entirely.
+function writeCache(cache) {
+  const tempFile = CACHE_FILE + '.tmp';
+  try {
+    fs.writeFileSync(tempFile, JSON.stringify(cache, null, 2), 'utf8');
+    fs.renameSync(tempFile, CACHE_FILE);
+  } catch (error) {
+    console.error('Error writing cache:', error);
+    try {
+      fs.unlinkSync(tempFile);
+    } catch (cleanupError) {
+      // Temp file may not exist; nothing to clean up.
+    }
+  }
+}
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -25,6 +61,12 @@ app.post('/api/describe-image', async (req, res) => {
     
     if (!imageUrl) {
       return res.status(400).json({ error: 'Image URL is required' });
+    }
+
+    // Check cache first
+    const cache = readCache();
+    if (cache[imageUrl]) {
+      return res.json({ caption: cache[imageUrl] });
     }
 
     const groqApiKey = process.env.GROQ_API_KEY;
@@ -81,6 +123,15 @@ app.post('/api/describe-image', async (req, res) => {
     const data = await groqResponse.json();
     const raw = data.choices[0]?.message?.content || '';
     const caption = raw.replace(/^[\s\S]*<\/think>/, '').trim();
+
+    // Update cache. Re-read first: the snapshot taken before the API call is
+    // now stale, and writing it back would clobber entries saved by requests
+    // that finished while this one was waiting on Groq.
+    if (caption) {
+      const freshCache = readCache();
+      freshCache[imageUrl] = caption;
+      writeCache(freshCache);
+    }
     
     res.json({ caption });
     
