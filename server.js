@@ -23,11 +23,20 @@ function readCache() {
 }
 
 // Helper to write cache
+// Writes to a temp file then renames: rename is atomic, so a crash mid-write
+// can't leave behind truncated JSON that readCache would discard entirely.
 function writeCache(cache) {
+  const tempFile = CACHE_FILE + '.tmp';
   try {
-    fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), 'utf8');
+    fs.writeFileSync(tempFile, JSON.stringify(cache, null, 2), 'utf8');
+    fs.renameSync(tempFile, CACHE_FILE);
   } catch (error) {
     console.error('Error writing cache:', error);
+    try {
+      fs.unlinkSync(tempFile);
+    } catch (cleanupError) {
+      // Temp file may not exist; nothing to clean up.
+    }
   }
 }
 
@@ -115,9 +124,14 @@ app.post('/api/describe-image', async (req, res) => {
     const raw = data.choices[0]?.message?.content || '';
     const caption = raw.replace(/^[\s\S]*<\/think>/, '').trim();
 
-    // Update cache
-    cache[imageUrl] = caption;
-    writeCache(cache);
+    // Update cache. Re-read first: the snapshot taken before the API call is
+    // now stale, and writing it back would clobber entries saved by requests
+    // that finished while this one was waiting on Groq.
+    if (caption) {
+      const freshCache = readCache();
+      freshCache[imageUrl] = caption;
+      writeCache(freshCache);
+    }
     
     res.json({ caption });
     
