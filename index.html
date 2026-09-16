@@ -11,12 +11,37 @@
       padding: 20px;
       background: #f4f4f4;
     }
+    .page-title {
+      max-width: 1200px;
+      margin: 0 auto 32px;
+      text-align: center;
+      font-size: 2rem;
+      color: #333;
+    }
+    .color-section {
+      max-width: 1200px;
+      margin: 0 auto 48px;
+    }
+    .color-heading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.5rem;
+      color: #333;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #ddd;
+    }
+    .swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.8), 0 1px 3px rgba(0,0,0,0.3);
+    }
     .grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
     }
     .card {
       background: white;
@@ -28,6 +53,7 @@
       width: 100%;
       height: 200px;
       object-fit: cover;
+      display: block;
     }
     .card .title {
       padding: 16px;
@@ -35,64 +61,87 @@
       font-size: 1.2rem;
       color: #333;
     }
+    .status {
+      max-width: 1200px;
+      margin: 0 auto;
+      text-align: center;
+      color: #666;
+    }
+    @media (max-width: 700px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="grid">
-    <div class="card">
-      <a href="image.html?url=https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg?crop=0.535xw:1.00xh;0.359xw,0&title=Bright%20Forget-Me-Not%20Flowers">
-        <img src="https://hips.hearstapps.com/hmg-prod/images/bright-forget-me-nots-royalty-free-image-1677788394.jpg?crop=0.535xw:1.00xh;0.359xw,0" alt="Bright forget-me-not flowers">
-      </a>
-      <div class="title">Bright Forget-Me-Not Flowers</div>
-    </div>
-    <div class="card">
-      <a href="image.html?url=https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgznmEcTjpvqepVI0IDFZpoVHj4shR2XrpmrI6Jx_xLg&s=10&title=Colorful%20Flower%20Bouquet">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgznmEcTjpvqepVI0IDFZpoVHj4shR2XrpmrI6Jx_xLg&s=10" alt="Colorful flower bouquet">
-      </a>
-      <div class="title">Colorful Flower Bouquet</div>
-    </div>
-    <div class="card">
-      <a href="image.html?url=https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSl414WRbvuwPcE6zBjAuMvvNyVFJOPyD1E4uc8XOuIgg&s=10&title=Purple%20Orchids">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSl414WRbvuwPcE6zBjAuMvvNyVFJOPyD1E4uc8XOuIgg&s=10" alt="Purple orchids">
-      </a>
-      <div class="title">Purple Orchids</div>
-    </div>
-    <div class="card">
-      <a href="image.html?url=https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwltbJsPUfflXtVrICd_Oa-jL8zKPrTCw7NlSxJqnpxg&s=10&title=Sunflower%20Field">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwltbJsPUfflXtVrICd_Oa-jL8zKPrTCw7NlSxJqnpxg&s=10" alt="Sunflower field">
-      </a>
-      <div class="title">Sunflower Field</div>
-    </div>
-    <div class="card">
-      <a href="image.html?url=https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYIBdiw1kcoX3jSYgZZgI-XFQT279C77wrn3eYf66tyg&s&title=Tropical%20Palm%20Leaves">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYIBdiw1kcoX3jSYgZZgI-XFQT279C77wrn3eYf66tyg&s" alt="Tropical palm leaves">
-      </a>
-      <div class="title">Tropical Palm Leaves</div>
-    </div>
-    <div class="card">
-      <a href="image.html?url=https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ_rc6OMxqXbbFMGfSJc700hUV1moahB5GNDMhgA-4Sfg&s=10&title=Pink%20Cherry%20Blossoms">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ_rc6OMxqXbbFMGfSJc700hUV1moahB5GNDMhgA-4Sfg&s=10" alt="Pink cherry blossoms">
-      </a>
-      <div class="title">Pink Cherry Blossoms</div>
-    </div>
-    <div class="card">
-      <a href="image.html?url=https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSucrubOeuNfp6tqbED0jD3JX1dXRzJRGwokH55Qi1dBA&s=10&title=White%20Lily%20Flower">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSucrubOeuNfp6tqbED0jD3JX1dXRzJRGwokH55Qi1dBA&s=10" alt="White lily flower">
-      </a>
-      <div class="title">White Lily Flower</div>
-    </div>
-    <div class="card">
-      <a href="image.html?url=https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSucrubOeuNfp6tqbED0jD3JX1dXRzJRGwokH55Qi1dBA&s=10&title=Red%20Roses">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSucrubOeuNfp6tqbED0jD3JX1dXRzJRGwokH55Qi1dBA&s=10" alt="Red roses">
-      </a>
-      <div class="title">Red Roses</div>
-    </div>
-    <div class="card">
-      <a href="image.html?url=https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlTAL2l3YlIwytEJdXhmieUYU_-KQXmAZaWU7rfAeC1g&s=10&title=Lavender%20Field">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRlTAL2l3YlIwytEJdXhmieUYU_-KQXmAZaWU7rfAeC1g&s=10" alt="Lavender field">
-      </a>
-      <div class="title">Lavender Field</div>
-    </div>
-  </div>
+  <h1 class="page-title">Flower Gallery</h1>
+  <div id="gallery"></div>
+  <p id="status" class="status">Loading gallery…</p>
+
+  <script>
+    const gallery = document.getElementById('gallery');
+    const status = document.getElementById('status');
+
+    async function loadGallery() {
+      let data;
+      try {
+        const response = await fetch('flowers.json');
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        data = await response.json();
+      } catch (error) {
+        status.textContent = 'Could not load the gallery.';
+        return;
+      }
+
+      const imageDir = data.imageDir || 'Images';
+
+      for (const color of data.colors) {
+        const section = document.createElement('section');
+        section.className = 'color-section';
+
+        const heading = document.createElement('h2');
+        heading.className = 'color-heading';
+        const swatch = document.createElement('span');
+        swatch.className = 'swatch';
+        swatch.style.background = color.swatch;
+        heading.appendChild(swatch);
+        heading.appendChild(document.createTextNode(color.label));
+        section.appendChild(heading);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+
+        for (const flower of color.flowers) {
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          const link = document.createElement('a');
+          link.href = 'image.html?file=' + encodeURIComponent(flower.file);
+
+          const img = document.createElement('img');
+          img.src = imageDir + '/' + flower.file;
+          img.alt = flower.alt || flower.name;
+          img.loading = 'lazy';
+          link.appendChild(img);
+
+          const title = document.createElement('div');
+          title.className = 'title';
+          title.textContent = flower.name;
+
+          card.appendChild(link);
+          card.appendChild(title);
+          grid.appendChild(card);
+        }
+
+        section.appendChild(grid);
+        gallery.appendChild(section);
+      }
+
+      status.remove();
+    }
+
+    loadGallery();
+  </script>
 </body>
 </html>
