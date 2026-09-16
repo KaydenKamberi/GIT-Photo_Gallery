@@ -28,6 +28,11 @@
       padding: 30px;
       text-align: center;
     }
+    .flower-name {
+      font-size: 1.6rem;
+      color: #333;
+      margin-bottom: 20px;
+    }
     .image-container {
       margin-bottom: 24px;
     }
@@ -71,10 +76,12 @@
 </head>
 <body>
   <div class="container">
+    <h1 id="flowerName" class="flower-name"></h1>
+
     <div class="image-container">
       <img id="displayImage" src="" alt="Loading...">
     </div>
-    
+
     <div class="caption-section">
       <div id="captionDisplay" class="loading">...</div>
     </div>
@@ -83,23 +90,68 @@
   </div>
 
   <script>
-    // Get image URL from query parameters
+    // Which image to show, by filename, looked up in flowers.json
     const urlParams = new URLSearchParams(window.location.search);
-    const imageUrl = urlParams.get('url');
-    const imageTitle = urlParams.get('title') || 'Image';
-    
-    // Set the image source
+    const file = urlParams.get('file');
+
     const displayImage = document.getElementById('displayImage');
-    displayImage.src = imageUrl;
-    displayImage.alt = imageTitle;
-    
-    // Document title
-    document.title = imageTitle;
-    
+    const flowerName = document.getElementById('flowerName');
+    const captionDisplay = document.getElementById('captionDisplay');
+
+    // Resolved once the manifest loads: the absolute URL of this image.
+    // The backend fetches the image over HTTP, so it needs a full URL, not a
+    // relative path.
+    let imageUrl = null;
+
+    async function loadImage() {
+      if (!file) {
+        flowerName.textContent = 'Image not found';
+        captionDisplay.className = 'error';
+        captionDisplay.textContent = 'No image was specified.';
+        return false;
+      }
+
+      let data;
+      try {
+        const response = await fetch('flowers.json');
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        data = await response.json();
+      } catch (error) {
+        flowerName.textContent = 'Image not found';
+        captionDisplay.className = 'error';
+        captionDisplay.textContent = 'Could not load the gallery data.';
+        return false;
+      }
+
+      const imageDir = data.imageDir || 'Images';
+      let flower = null;
+      for (const color of data.colors) {
+        const match = color.flowers.find(f => f.file === file);
+        if (match) {
+          flower = match;
+          break;
+        }
+      }
+
+      // Only files listed in the manifest are displayed, so a made-up
+      // ?file= value can't point the page at something else.
+      if (!flower) {
+        flowerName.textContent = 'Image not found';
+        captionDisplay.className = 'error';
+        captionDisplay.textContent = 'That image is not in the gallery.';
+        return false;
+      }
+
+      imageUrl = new URL(imageDir + '/' + flower.file, window.location.href).href;
+      displayImage.src = imageUrl;
+      displayImage.alt = flower.alt || flower.name;
+      flowerName.textContent = flower.name;
+      document.title = flower.name;
+      return true;
+    }
+
     // Fetch AI caption from backend
     async function fetchCaption() {
-      const captionDisplay = document.getElementById('captionDisplay');
-      
       try {
         const response = await fetch('/api/describe-image', {
           method: 'POST',
@@ -127,8 +179,12 @@
       }
     }
     
-    // Start fetching caption when page loads
-    fetchCaption();
+    // Show the image first, then ask the backend for its caption
+    loadImage().then(found => {
+      if (found) {
+        fetchCaption();
+      }
+    });
   </script>
 </body>
 </html>

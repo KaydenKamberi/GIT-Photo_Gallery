@@ -1,0 +1,71 @@
+{
+  "imageDir": "Images",
+  "colors": [
+    {
+      "id": "red",
+      "label": "Reds",
+      "swatch": "#d32f2f",
+      "flowers": [
+        {
+          "file": "red-roses.jpeg",
+          "name": "Red Roses",
+          "alt": "A close-up bouquet of deep red roses with dark green leaves"
+        },
+        {
+          "file": "red-tulips.jpeg",
+          "name": "Red Tulips",
+          "alt": "A dense field of bright red tulips with green stems"
+        },
+        {
+          "file": "red-hot-poker.jpeg",
+          "name": "Red Hot Poker",
+          "alt": "Torch-shaped red and yellow red hot poker blooms in a garden"
+        }
+      ]
+    },
+    {
+      "id": "yellow",
+      "label": "Yellows",
+      "swatch": "#f9a825",
+      "flowers": [
+        {
+          "file": "yellow-dahlia.jpeg",
+          "name": "Yellow Dahlia",
+          "alt": "A single yellow dahlia with a bright orange center"
+        },
+        {
+          "file": "yellow-tulips.jpeg",
+          "name": "Yellow Tulips",
+          "alt": "A sunlit field of yellow tulips"
+        },
+        {
+          "file": "black-eyed-susan.jpeg",
+          "name": "Black-Eyed Susan",
+          "alt": "A yellow black-eyed Susan with a dark center against a blue sky"
+        }
+      ]
+    },
+    {
+      "id": "purple",
+      "label": "Purples",
+      "swatch": "#7b1fa2",
+      "flowers": [
+        {
+          "file": "purple-allium.jpeg",
+          "name": "Purple Allium",
+          "alt": "Globe-shaped purple allium flowers on tall stems above a hedge"
+        },
+        {
+          "file": "purple-larkspur.jpeg",
+          "name": "Purple Larkspur",
+          "alt": "A spike of violet larkspur flowers with yellow centers"
+        },
+        {
+          "file": "jacaranda.jpeg",
+          "name": "Jacaranda",
+          "alt": "Clusters of lavender jacaranda blossoms hanging from a branch after rain"
+        }
+      ]
+    }
+  ]
+}
