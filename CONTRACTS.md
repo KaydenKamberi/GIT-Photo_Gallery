@@ -9,6 +9,23 @@ to change, stop and ask the repo owner — do not change it and keep going.
 
 ---
 
+## 0. Current status
+
+| Phase | What | Owner | State |
+|---|---|---|---|
+| 0 | Module split, contracts, smoke test | — | **Done** |
+| 1 | `{ file }` contract for descriptions | Agent A | **Done** |
+| 2 | `POST /api/recommend` | Agent B | Not started |
+| 3 | Sidebar, ask bar, feed, highlight | Agent C | Not started |
+
+**Phases 2 and 3 can now run in parallel.** Both serial steps are merged, so
+Agent B and Agent C can start at the same time without waiting on each other.
+
+Agent A's work is complete; `routes/describe.js` and `image.html` are settled
+and should not need further changes for this feature.
+
+---
+
 ## 1. Who owns what
 
 Each file has exactly one owner. Do not edit a file you do not own, even to

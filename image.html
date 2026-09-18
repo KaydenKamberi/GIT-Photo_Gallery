@@ -98,11 +98,6 @@
     const flowerName = document.getElementById('flowerName');
     const captionDisplay = document.getElementById('captionDisplay');
 
-    // Resolved once the manifest loads: the absolute URL of this image.
-    // The backend fetches the image over HTTP, so it needs a full URL, not a
-    // relative path.
-    let imageUrl = null;
-
     async function loadImage() {
       if (!file) {
         flowerName.textContent = 'Image not found';
@@ -142,8 +137,7 @@
         return false;
       }
 
-      imageUrl = new URL(imageDir + '/' + flower.file, window.location.href).href;
-      displayImage.src = imageUrl;
+      displayImage.src = imageDir + '/' + flower.file;
       displayImage.alt = flower.alt || flower.name;
       flowerName.textContent = flower.name;
       document.title = flower.name;
@@ -158,7 +152,7 @@
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ imageUrl }),
+          body: JSON.stringify({ file }),
         });
         
         const data = await response.json();
