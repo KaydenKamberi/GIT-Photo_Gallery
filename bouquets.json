@@ -1,0 +1,44 @@
+{
+  "bouquets": [
+    {
+      "id": "seed-valentines",
+      "name": "Valentine's Classic",
+      "question": "flowers for valentines day",
+      "occasion": "Valentine's Day",
+      "flowers": ["red-roses.jpeg", "red-tulips.jpeg"],
+      "reason": "Red roses are the traditional symbol of romance, and red tulips echo their colour while adding a softer, more open shape to the bunch.",
+      "note": "",
+      "createdAt": "2026-09-16T12:00:00.000Z"
+    },
+    {
+      "id": "seed-birthday",
+      "name": "Birthday Sunshine",
+      "question": "something cheerful for a birthday",
+      "occasion": "Birthday",
+      "flowers": ["yellow-tulips.jpeg", "black-eyed-susan.jpeg", "yellow-dahlia.jpeg"],
+      "reason": "Three yellows with different shapes: the tulips are neat and rounded, the black-eyed Susans bring a dark centre for contrast, and the dahlia adds one large showy bloom.",
+      "note": "",
+      "createdAt": "2026-09-16T12:05:00.000Z"
+    },
+    {
+      "id": "seed-spring",
+      "name": "Spring Garden Party",
+      "question": "purple flowers for a garden party",
+      "occasion": "Spring garden party",
+      "flowers": ["purple-allium.jpeg", "jacaranda.jpeg", "purple-larkspur.jpeg"],
+      "reason": "The allium globes give height and structure, jacaranda softens the arrangement with trailing blossom, and larkspur fills the gaps with deeper violet.",
+      "note": "",
+      "createdAt": "2026-09-16T12:10:00.000Z"
+    },
+    {
+      "id": "seed-sympathy",
+      "name": "Quiet Condolences",
+      "question": "flowers for a funeral",
+      "occasion": "Funeral / sympathy",
+      "flowers": ["jacaranda.jpeg", "purple-larkspur.jpeg"],
+      "reason": "Soft purples read as respectful and restrained, which suits a sympathy arrangement better than anything bright.",
+      "note": "This gallery has no white flowers, which are the usual choice for sympathy — these purples are the closest fit available.",
+      "createdAt": "2026-09-16T12:15:00.000Z"
+    }
+  ]
+}
