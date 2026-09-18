@@ -1,0 +1,70 @@
+You are Agent B on the GIT-Photo_Gallery project. Multiple AIs are working
+on this repo in parallel, so staying inside your assigned scope matters.
+
+FIRST: read CONTRACTS.md in the repo root, top to bottom. It defines file
+ownership, the API contracts, and the rules. Then read the STATUS comment
+at the top of routes/recommend.js — it lists exactly what you need to build.
+
+YOU OWN: routes/recommend.js. That is the only file you may edit.
+
+DO NOT TOUCH: index.html (Agent C is editing it right now), lib/*,
+server.js, flowers.json, scripts/smoke.js, CONTRACTS.md, image.html,
+routes/describe.js. If you believe one of them needs a change, stop and
+report it instead of editing.
+
+YOUR TASK: implement POST /api/recommend per section 2 of CONTRACTS.md.
+
+A user types an occasion ("flowers for valentines day"). You return 2-3
+flowers from the gallery that suit it, and save the result to a shared feed.
+
+Two model calls, both text-only (use groq.textModel(), NOT the vision model
+— neither call needs to see an image):
+
+1. DEDUP CALL. Ask the model whether any existing feed entry already answers
+   this occasion, sending existing entries' "name" and "occasion" values. On
+   a match, return that entry with reused: true and write nothing new. The
+   point is that two people asking for Valentine's flowers get the same
+   bouquet rather than two near-identical entries.
+
+2. PICK CALL. Send the catalog from buildCatalog() (already written for you)
+   and require strict JSON back: { name, occasion, flowers, reason, note }.
+   - "name" is a short bouquet title like "Valentine's Classic"
+   - "occasion" is the normalized occasion — this is what dedup matches on
+   - "flowers" is 2-3 filenames
+   - "reason" is why these flowers suit the occasion
+   - "note" is "" when the picks genuinely fit, otherwise an honest caveat
+
+CRITICAL: validate every returned filename with flowers.isValidFile(). The
+model WILL sometimes return a plausible flower that isn't in this gallery,
+like "white-lily.jpeg". Drop invalid ones. If fewer than MIN_PICKS (2)
+survive, retry the pick once, then return 502 rather than storing a broken
+bouquet. Never store an unvalidated filename. This is the single most
+important rule in your task.
+
+Also required:
+- Reject empty or over-100-character questions with 400.
+- When the gallery doesn't really cover the request (a funeral, blue
+  flowers), still return picks and put the honest caveat in "note". Do not
+  refuse, and do not pretend a bad match is a good one.
+- Append using cache.updateJson (NOT readJson + writeJson) and trim to
+  MAX_FEED_ENTRIES (30), newest first. updateJson re-reads immediately
+  before writing; using a stale snapshot silently drops entries when two
+  requests overlap.
+- Use lib/groq.js completeJson() for JSON responses. Don't write your own
+  API call or JSON parsing — it's already there and handles code fences and
+  the model's <think> blocks.
+
+BEFORE YOU PUSH:
+- Run: git update-index --skip-worktree bouquets.json
+  (the server writes to this file; never commit your local version)
+- Run: npm run smoke
+- Push only if it says green. If it says FAILED, fix it first.
+- Branch: agent-b/recommend, off main.
+
+TEST WITH REAL API CALLS — you have the key, which is why you have this
+task. Try at least: "flowers for valentines day", then "romantic dinner"
+(should reuse the first), then "flowers for a funeral" (should return picks
+WITH a note explaining the gallery has no white flowers), then something
+absurd. Confirm no invented filenames ever reach bouquets.json.
+
+Do not add npm dependencies. Vanilla Node + Express, no build step.
