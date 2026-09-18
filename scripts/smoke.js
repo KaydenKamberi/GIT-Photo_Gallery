@@ -26,7 +26,14 @@ const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const results = [];
 function pass(name, detail) { results.push({ state: 'PASS', name, detail }); }
 function fail(name, detail) { results.push({ state: 'FAIL', name, detail }); }
+
+// PENDING: a phase nobody has built yet. Expected, not a problem.
 function pending(name, detail) { results.push({ state: 'PENDING', name, detail }); }
+
+// SKIPPED: we could not run the check at all, so we do not know whether it
+// passes. That is NOT the same as passing, and the run is not green. Set
+// SMOKE_ALLOW_NO_BROWSER=1 to acknowledge it deliberately.
+function skipped(name, detail) { results.push({ state: 'SKIPPED', name, detail }); }
 
 async function get(pathname) {
   const response = await fetch(BASE + pathname);
@@ -226,7 +233,7 @@ async function checkBrowser() {
   try {
     ({ chromium } = require('playwright'));
   } catch (error) {
-    pending('browser checks', 'playwright not installed — run: npm i -D playwright');
+    skipped('browser checks', 'playwright not installed');
     return;
   }
 
@@ -235,7 +242,7 @@ async function checkBrowser() {
   try {
     browser = await chromium.launch(launchOptions);
   } catch (error) {
-    pending('browser checks', 'could not launch chromium: ' + error.message.split('\n')[0]);
+    skipped('browser checks', 'could not launch chromium: ' + error.message.split('\n')[0]);
     return;
   }
 
@@ -331,26 +338,52 @@ async function main() {
     if (server) server.kill();
   }
 
+  const MARKS = { PASS: '  ok  ', FAIL: ' FAIL ', PENDING: ' pend ', SKIPPED: ' SKIP ' };
   const width = Math.max(...results.map(r => r.name.length));
   console.log('');
   for (const result of results) {
-    const mark = result.state === 'PASS' ? '  ok  ' : result.state === 'FAIL' ? ' FAIL ' : ' pend ';
-    console.log(`${mark} ${result.name.padEnd(width)}  ${result.detail || ''}`);
+    console.log(`${MARKS[result.state]} ${result.name.padEnd(width)}  ${result.detail || ''}`);
   }
 
   const failed = results.filter(r => r.state === 'FAIL').length;
   const pendingCount = results.filter(r => r.state === 'PENDING').length;
+  const skippedCount = results.filter(r => r.state === 'SKIPPED').length;
   const passed = results.filter(r => r.state === 'PASS').length;
 
   console.log('');
-  console.log(`${passed} passed, ${failed} failed, ${pendingCount} pending`);
+  console.log(`${passed} passed, ${failed} failed, ${pendingCount} pending, ${skippedCount} skipped`);
+
+  // A skipped check is not a passing check. Browser checks cover the whole
+  // front end, including the sidebar, so treating "could not run them" as
+  // green would let broken UI through claiming a clean test.
+  const acknowledged = process.env.SMOKE_ALLOW_NO_BROWSER === '1';
+
   if (failed) {
     console.log('\nSmoke test FAILED — do not push.');
+  } else if (skippedCount && !acknowledged) {
+    console.log(`
+Smoke test INCOMPLETE — ${skippedCount} check(s) could not run, so the front
+end was never verified. This is not a pass.
+
+Install the browser and re-run:
+
+  npm i --no-save playwright && npx playwright install chromium
+  npm run smoke
+
+If you genuinely cannot install it and are only changing backend code, you
+can acknowledge the gap explicitly:
+
+  SMOKE_ALLOW_NO_BROWSER=1 npm run smoke
+
+Do not do that if you touched index.html or image.html.`);
   } else {
-    console.log('\nSmoke test green.' + (pendingCount ? ' (Pending checks are unbuilt phases, not failures.)' : ''));
+    let message = '\nSmoke test green.';
+    if (pendingCount) message += ' (Pending checks are unbuilt phases, not failures.)';
+    if (skippedCount) message += `\nWARNING: ${skippedCount} browser check(s) skipped and explicitly acknowledged — the front end was NOT verified.`;
+    console.log(message);
   }
 
-  process.exit(failed ? 1 : 0);
+  process.exit(failed || (skippedCount && !acknowledged) ? 1 : 0);
 }
 
 main();
