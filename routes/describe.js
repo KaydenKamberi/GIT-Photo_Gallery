@@ -1,32 +1,46 @@
 // POST /api/describe-image — AI description for one gallery image.
 //
 // OWNER: Agent A (see CONTRACTS.md).
-//
-// STATUS: this is the pre-existing implementation, moved here unchanged by
-// the Phase 0 refactor. It still takes { imageUrl } and fetches the image
-// over HTTP. Phase 1 converts it to the { file } contract in CONTRACTS.md:
-// validate against the manifest, read the bytes from disk, key the cache by
-// filename, and pass the flower's name into the prompt. lib/flowers.js
-// already has everything that needs (isValidFile, imagePath, mimeType).
 
+const fs = require('fs');
 const path = require('path');
 const { readJson, updateJson } = require('../lib/cache');
+const flowers = require('../lib/flowers');
 const groq = require('../lib/groq');
 
 const CACHE_FILE = path.join(__dirname, '..', 'descriptions.json');
 
+function buildPrompt(flower) {
+  // The flower's name comes from the manifest, so the model describes the
+  // photo instead of guessing the species.
+  return [
+    `This is a photo of ${flower.name.toLowerCase()}.`,
+    'Write a one-sentence caption describing its appearance.',
+    'Output only the caption.',
+  ].join(' ');
+}
+
 async function describeImage(req, res) {
   try {
-    const { imageUrl } = req.body;
+    const { file } = req.body;
 
-    if (!imageUrl) {
-      return res.status(400).json({ error: 'Image URL is required' });
+    if (!file) {
+      return res.status(400).json({ error: 'Image file is required' });
     }
 
-    // Check cache first
+    // The manifest is the allowlist. A filename is usable only if it is
+    // literally listed in flowers.json, which rejects path traversal and
+    // made-up filenames alike.
+    const flower = flowers.findFlower(file);
+    if (!flower) {
+      return res.status(400).json({ error: 'Not a gallery image' });
+    }
+
+    // Cache is keyed by bare filename, so entries are stable across
+    // localhost and any deployed domain.
     const cache = readJson(CACHE_FILE, {});
-    if (cache[imageUrl]) {
-      return res.json({ caption: cache[imageUrl] });
+    if (cache[file]) {
+      return res.json({ caption: cache[file] });
     }
 
     if (!groq.hasApiKey()) {
@@ -35,14 +49,16 @@ async function describeImage(req, res) {
       });
     }
 
-    // Fetch the image as base64
-    const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) {
-      return res.status(400).json({ error: 'Failed to fetch image from URL' });
+    // Read the image off disk rather than fetching it over HTTP: the file is
+    // right here, and the server no longer needs to make outbound requests to
+    // URLs supplied by a client.
+    let base64Image;
+    try {
+      base64Image = fs.readFileSync(flowers.imagePath(file)).toString('base64');
+    } catch (error) {
+      console.error('Could not read image ' + file + ':', error);
+      return res.status(500).json({ error: 'Could not read the image file' });
     }
-
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const base64Image = Buffer.from(imageBuffer).toString('base64');
 
     const caption = await groq.complete({
       model: groq.visionModel(),
@@ -52,13 +68,12 @@ async function describeImage(req, res) {
         {
           role: 'user',
           content: [
-            {
-              type: 'text',
-              text: 'Write a one-sentence caption for this flower image. Name the flower, then briefly describe its appearance. Output only the caption.',
-            },
+            { type: 'text', text: buildPrompt(flower) },
             {
               type: 'image_url',
-              image_url: { url: `data:image/jpeg;base64,${base64Image}` },
+              image_url: {
+                url: `data:${flowers.mimeType(file)};base64,${base64Image}`,
+              },
             },
           ],
         },
@@ -69,7 +84,7 @@ async function describeImage(req, res) {
     // this one waited on Groq doesn't get clobbered.
     if (caption) {
       updateJson(CACHE_FILE, {}, fresh => {
-        fresh[imageUrl] = caption;
+        fresh[file] = caption;
         return fresh;
       });
     }
