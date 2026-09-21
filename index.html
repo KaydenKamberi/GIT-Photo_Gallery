@@ -89,34 +89,66 @@
       margin: 0 auto;
       position: relative;
     }
+    /* Docked to the viewport edge, not to .page-container. The container is
+       centred with a max-width, so a sidebar inside its flow floats inwards
+       on wide screens instead of sitting against the side of the window. */
     #sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
       width: 320px;
       background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-      margin-right: 20px;
-      flex-shrink: 0;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.15);
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      /* Must sit above .overlay (999), or the backdrop swallows every click
-         meant for the ask bar and the feed. */
-      position: relative;
+      /* Above .overlay (999), or the backdrop swallows every click meant for
+         the ask bar and the feed. */
       z-index: 1001;
-      padding-top: 56px;
     }
     #sidebar.collapsed {
       display: none;
     }
+    /* Make room for the panel rather than letting it cover the gallery. */
+    body {
+      transition: padding-left 0.2s ease;
+    }
+    body.sidebar-open {
+      padding-left: 340px;
+    }
     .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       padding: 16px;
       border-bottom: 1px solid #ddd;
       background: #fafafa;
+    }
+    #sidebarClose {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      font-size: 1.3rem;
+      line-height: 1;
+      color: #555;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #sidebarClose:hover {
+      background: #eee;
+      border-color: #ccc;
     }
     .sidebar-ask {
       display: flex;
       flex-direction: column;
       gap: 8px;
+      /* Flush against the window edge now, so the controls need their own
+         breathing room. */
+      padding: 16px;
     }
     .sidebar-ask label {
       font-size: 0.9rem;
@@ -156,7 +188,7 @@
     .sidebar-feed {
       flex: 1;
       overflow-y: auto;
-      padding: 8px;
+      padding: 8px 16px 16px;
     }
     .bouquet-entry {
       background: white;
@@ -236,6 +268,11 @@
     #sidebarToggle:hover {
       background: #45a049;
     }
+    /* The open panel carries its own close button, so the floating one would
+       only hover over the sidebar it just opened. */
+    body.sidebar-open #sidebarToggle {
+      display: none;
+    }
     #main-content {
       flex: 1;
     }
@@ -264,21 +301,13 @@
         flex-direction: column;
       }
       #sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
         width: 100%;
-        height: 100%;
         max-width: none;
-        margin: 0;
-        border-radius: 0;
-        z-index: 1001;
       }
-      #sidebar.collapsed {
-        display: none;
-      }
-      #sidebarToggle {
-        z-index: 1002;
+      /* Full-width drawer over the page: there is no room to shift the
+         gallery aside on a phone. */
+      body.sidebar-open {
+        padding-left: 20px;
       }
       #main-content {
         width: 100%;
@@ -299,7 +328,8 @@
   <div class="page-container">
     <aside id="sidebar" class="collapsed" aria-label="Bouquet recommendations">
       <div class="sidebar-header">
-        <h2 style="margin: 0; font-size: 1.2rem; color: #333;">Bouquet Recommendations</h2>
+        <h2 style="margin: 0; font-size: 1.05rem; color: #333;">Bouquet Recommendations</h2>
+        <button id="sidebarClose" aria-label="Hide bouquet recommendations">&times;</button>
       </div>
       <div class="sidebar-ask">
         <label for="occasionInput">Ask for an occasion:</label>
@@ -322,6 +352,7 @@
     const status = document.getElementById('status');
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarClose = document.getElementById('sidebarClose');
     const overlay = document.getElementById('overlay');
     const bouquetFeed = document.getElementById('bouquetFeed');
     const occasionInput = document.getElementById('occasionInput');
@@ -337,19 +368,25 @@
 
     // Toggle sidebar
     function toggleSidebar() {
-      const isCollapsed = sidebar.classList.contains('collapsed');
-      if (isCollapsed) {
-        sidebar.classList.remove('collapsed');
-        sidebarToggle.setAttribute('aria-expanded', 'true');
-        overlay.classList.add('active');
+      const opening = sidebar.classList.contains('collapsed');
+      sidebar.classList.toggle('collapsed', !opening);
+      // Drives the gallery's left padding and hides the floating open button
+      // while the panel is showing.
+      document.body.classList.toggle('sidebar-open', opening);
+      sidebarToggle.setAttribute('aria-expanded', String(opening));
+      overlay.classList.toggle('active', opening);
+
+      // Move focus with the panel, so keyboard and screen-reader users are
+      // not left on a button that just disappeared.
+      if (opening) {
+        occasionInput.focus();
       } else {
-        sidebar.classList.add('collapsed');
-        sidebarToggle.setAttribute('aria-expanded', 'false');
-        overlay.classList.remove('active');
+        sidebarToggle.focus();
       }
     }
 
     sidebarToggle.addEventListener('click', toggleSidebar);
+    sidebarClose.addEventListener('click', toggleSidebar);
     overlay.addEventListener('click', toggleSidebar);
 
     // Close sidebar on Escape key
