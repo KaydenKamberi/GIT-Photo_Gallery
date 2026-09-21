@@ -3,26 +3,13 @@
 //
 // OWNER: Agent B (see CONTRACTS.md).
 //
-// STATUS: stub. GET /api/bouquets already works against the seeded feed, so
-// the frontend (Agent C) can build the sidebar against real-shaped data now.
-// POST /api/recommend returns 501 until Agent B implements it.
+// A request runs two text-only model calls: one asking whether an existing
+// feed entry already answers this occasion (reuse it if so, and write
+// nothing), then one asking which 2-3 catalog flowers suit it.
 //
-// What Phase 2 has to do, per CONTRACTS.md:
-//   1. Validate the question: non-empty, <= MAX_QUESTION_LENGTH characters.
-//   2. Dedup call - ask the text model whether an existing entry already
-//      answers this occasion. On a hit, return it with reused: true and
-//      write nothing.
-//   3. Pick call - send the flower catalog (see buildCatalog below) and ask
-//      for strict JSON: { name, occasion, flowers, reason, note }.
-//   4. Validate every returned filename with flowers.isValidFile(). Models
-//      invent plausible filenames that are not in this gallery. Drop the
-//      invalid ones; if fewer than MIN_PICKS survive, retry once, then fail
-//      rather than storing a broken entry.
-//   5. Append via cache.updateJson (NOT readJson + writeJson) and trim the
-//      feed to MAX_FEED_ENTRIES, newest first.
-//
-// lib/groq.js has completeJson() for prompts that must return JSON, and
-// lib/cache.js has updateJson() for the read-modify-write.
+// Every filename the model returns is checked against the manifest before it
+// is stored. Models invent plausible flowers this gallery does not have, so
+// an unvalidated pick would put a broken image in the feed for everyone.
 
 const path = require('path');
 const { readJson, updateJson } = require('../lib/cache');
@@ -67,6 +54,13 @@ function upstreamError(message) {
 
 async function findReusableBouquet(question, feed) {
   const bouquets = Array.isArray(feed.bouquets) ? feed.bouquets : [];
+
+  // Nothing to match against, so skip the call rather than paying for the
+  // model to tell us an empty list contains nothing.
+  if (!bouquets.length) {
+    return null;
+  }
+
   const entries = bouquets.map(({ name, occasion }) => ({ name, occasion }));
   const decision = await groq.completeJson({
     model: groq.textModel(),
@@ -119,6 +113,7 @@ async function pickBouquet(question) {
   const catalog = buildCatalog();
   const allowedFiles = catalog.map(flower => flower.file);
   let result = null;
+  let lastFailure = 'The model did not return a usable recommendation';
 
   for (let attempt = 0; attempt < 2; attempt++) {
     result = await groq.completeJson({
@@ -156,11 +151,16 @@ async function pickBouquet(question) {
     const valid = [...new Set(
       candidates.filter(file => flowers.isValidFile(file))
     )].slice(0, MAX_PICKS);
+    // "note" is optional by design: it is empty for a good fit, so models
+    // routinely leave it out entirely. Treat a missing note as "", and only
+    // reject one that is present but not a string. Requiring it outright
+    // failed perfectly good recommendations.
+    const note = result && result.note === undefined ? '' : result && result.note;
     const hasRequiredText = result &&
       typeof result.name === 'string' && Boolean(result.name.trim()) &&
       typeof result.occasion === 'string' && Boolean(result.occasion.trim()) &&
       typeof result.reason === 'string' && Boolean(result.reason.trim()) &&
-      typeof result.note === 'string';
+      typeof note === 'string';
 
     if (hasRequiredText && valid.length >= MIN_PICKS) {
       return {
@@ -168,12 +168,18 @@ async function pickBouquet(question) {
         occasion: result.occasion.trim(),
         flowers: valid,
         reason: result.reason.trim(),
-        note: result.note.trim(),
+        note: note.trim(),
       };
     }
+
+    // Say which half failed. Blaming the flowers for a text problem sends
+    // the next person debugging the wrong thing.
+    lastFailure = valid.length < MIN_PICKS
+      ? 'The model did not return enough valid gallery flowers'
+      : 'The model response was missing required text fields';
   }
 
-  throw upstreamError('The model did not return enough valid gallery flowers');
+  throw upstreamError(lastFailure);
 }
 
 // GET /api/bouquets

@@ -99,6 +99,11 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      /* Must sit above .overlay (999), or the backdrop swallows every click
+         meant for the ask bar and the feed. */
+      position: relative;
+      z-index: 1001;
+      padding-top: 56px;
     }
     #sidebar.collapsed {
       display: none;
@@ -200,16 +205,26 @@
       color: #888;
       margin-top: 6px;
     }
-    .bouquet-entry.reused .bouquet-name::after {
-      content: " (reused)";
-      font-weight: normal;
-      color: #666;
+    /* Briefly marks the existing entry a reused answer points at, so the
+       user can see which one the server matched. */
+    .bouquet-entry.flash {
+      animation: flash 1.6s ease-out;
+    }
+    @keyframes flash {
+      0%, 100% { border-color: #eee; background: white; }
+      20%      { border-color: #1565c0; background: #e3f2fd; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bouquet-entry.flash { animation: none; border-color: #1565c0; }
+      .card { transition: none; }
     }
     #sidebarToggle {
       position: fixed;
       top: 20px;
       left: 20px;
-      z-index: 1000;
+      /* Above the sidebar (1001), or opening the panel buries the only
+         control that closes it again. */
+      z-index: 1002;
       padding: 10px 16px;
       background: #4CAF50;
       color: white;
@@ -236,6 +251,13 @@
     }
     .overlay.active {
       display: block;
+    }
+    /* A dimming backdrop belongs to the mobile drawer. Beside a docked
+       desktop panel it only greys out the gallery the sidebar points at. */
+    @media (min-width: 701px) {
+      .overlay.active {
+        display: none;
+      }
     }
     @media (max-width: 700px) {
       .page-container {
@@ -284,7 +306,7 @@
         <input type="text" id="occasionInput" placeholder="e.g., flowers for a wedding" maxlength="100">
         <button id="askButton">Get Recommendation</button>
       </div>
-      <div id="recommendNotice" class="sidebar-notice" style="display: none;"></div>
+      <div id="recommendNotice" class="sidebar-notice" role="status" aria-live="polite" style="display: none;"></div>
       <div class="sidebar-feed" id="bouquetFeed"></div>
     </aside>
     
@@ -308,6 +330,10 @@
 
     let allFlowers = [];
     let currentHighlight = null;
+
+    // The feed's source of truth. Reading state back out of the rendered DOM
+    // loses whatever the markup doesn't carry, so keep the array itself.
+    let bouquets = [];
 
     // Toggle sidebar
     function toggleSidebar() {
@@ -402,17 +428,38 @@
         const response = await fetch('/api/bouquets');
         if (response.ok) {
           const data = await response.json();
-          renderBouquetFeed(data.bouquets || []);
+          bouquets = data.bouquets || [];
+          renderBouquetFeed(bouquets);
         }
       } catch (error) {
         console.error('Failed to load bouquets:', error);
       }
     }
 
+    // One place that knows how a notice looks. aria-live so a screen reader
+    // hears the result of an ask it cannot see.
+    function showNotice(message, kind) {
+      const palette = {
+        info: { color: '#1565c0', background: '#e3f2fd' },
+        warn: { color: '#884400', background: '#fff8e1' },
+        error: { color: '#d32f2f', background: '#ffebee' },
+      };
+      const style = palette[kind] || palette.info;
+      recommendNotice.textContent = message;
+      recommendNotice.style.display = 'block';
+      recommendNotice.style.color = style.color;
+      recommendNotice.style.background = style.background;
+    }
+
+    function hideNotice() {
+      recommendNotice.style.display = 'none';
+    }
+
     // Render bouquet feed entries
-    function renderBouquetFeed(bouquets) {
+    function renderBouquetFeed(entries) {
+      const bouquets = entries;
       bouquetFeed.innerHTML = '';
-      
+
       if (bouquets.length === 0) {
         const empty = document.createElement('p');
         empty.textContent = 'No bouquets yet. Ask for a recommendation!';
@@ -427,12 +474,7 @@
         const entry = document.createElement('div');
         entry.className = 'bouquet-entry';
         entry.dataset.id = bouquet.id;
-        entry.dataset.flowers = JSON.stringify(bouquet.flowers);
-        entry.dataset.reused = bouquet.reused || false;
-
-        if (bouquet.reused) {
-          entry.classList.add('reused');
-        }
+        entry.dataset.flowers = JSON.stringify(bouquet.flowers || []);
 
         const name = document.createElement('div');
         name.className = 'bouquet-name';
@@ -522,7 +564,7 @@
 
       askButton.disabled = true;
       askButton.textContent = 'Asking...';
-      recommendNotice.style.display = 'none';
+      hideNotice();
 
       try {
         const response = await fetch('/api/recommend', {
@@ -532,45 +574,40 @@
         });
 
         if (response.status === 501) {
-          recommendNotice.textContent = 'Recommendation service is not available yet. Try again later!';
-          recommendNotice.style.display = 'block';
-          recommendNotice.style.color = '#884400';
-          recommendNotice.style.background = '#fff8e1';
+          showNotice('Recommendation service is not available yet. Try again later!', 'warn');
         } else if (!response.ok) {
-          const data = await response.json();
-          recommendNotice.textContent = data.error || 'Failed to get recommendation.';
-          recommendNotice.style.display = 'block';
-          recommendNotice.style.color = '#d32f2f';
-          recommendNotice.style.background = '#ffebee';
+          const data = await response.json().catch(() => ({}));
+          showNotice(data.error || 'Failed to get recommendation.', 'error');
         } else {
           const data = await response.json();
           if (data.bouquet) {
-            // Add the new bouquet to the top of the feed
-            const bouquets = Array.from(bouquetFeed.children).map(el => {
-              return {
-                id: el.dataset.id,
-                name: el.querySelector('.bouquet-name').textContent,
-                occasion: el.querySelector('.bouquet-meta')?.textContent || '',
-                flowers: JSON.parse(el.dataset.flowers),
-                reason: el.querySelector('.bouquet-reason')?.textContent || '',
-                note: el.querySelector('.bouquet-note')?.textContent || '',
-                reused: el.dataset.reused === 'true'
-              };
-            });
-            bouquets.unshift({
-              ...data.bouquet,
-              reused: data.reused,
-              id: data.bouquet.id || 'new-' + Date.now()
-            });
-            renderBouquetFeed(bouquets);
+            const existing = bouquets.findIndex(b => b.id === data.bouquet.id);
+
+            if (data.reused && existing !== -1) {
+              // The server reused an entry already in the feed. Adding it
+              // again would put the same bouquet in the list twice, which is
+              // precisely what reuse exists to prevent. Point at the one
+              // that is already there instead.
+              renderBouquetFeed(bouquets);
+              const entry = bouquetFeed.children[existing];
+              if (entry) {
+                entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                entry.classList.add('flash');
+                setTimeout(() => entry.classList.remove('flash'), 1600);
+              }
+              showNotice('Someone already asked this — showing that bouquet.', 'info');
+            } else {
+              bouquets.unshift({
+                ...data.bouquet,
+                id: data.bouquet.id || 'new-' + Date.now()
+              });
+              renderBouquetFeed(bouquets);
+            }
             occasionInput.value = '';
           }
         }
       } catch (error) {
-        recommendNotice.textContent = 'Error: ' + error.message;
-        recommendNotice.style.display = 'block';
-        recommendNotice.style.color = '#d32f2f';
-        recommendNotice.style.background = '#ffebee';
+        showNotice('Error: ' + error.message, 'error');
       } finally {
         askButton.disabled = false;
         askButton.textContent = 'Get Recommendation';
