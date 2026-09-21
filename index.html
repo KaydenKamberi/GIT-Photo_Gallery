@@ -48,6 +48,7 @@
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: opacity 0.2s, transform 0.2s;
     }
     .card img {
       width: 100%;
@@ -61,6 +62,14 @@
       font-size: 1.2rem;
       color: #333;
     }
+    .card.dimmed {
+      opacity: 0.4;
+      transform: scale(0.98);
+    }
+    .card.highlighted {
+      box-shadow: 0 0 0 3px #ffd700;
+      transform: scale(1.02);
+    }
     .status {
       max-width: 1200px;
       margin: 0 auto;
@@ -72,17 +81,285 @@
         grid-template-columns: repeat(2, 1fr);
       }
     }
+
+    /* Sidebar styles */
+    .page-container {
+      display: flex;
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+    }
+    #sidebar {
+      width: 320px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      margin-right: 20px;
+      flex-shrink: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      /* Must sit above .overlay (999), or the backdrop swallows every click
+         meant for the ask bar and the feed. */
+      position: relative;
+      z-index: 1001;
+      padding-top: 56px;
+    }
+    #sidebar.collapsed {
+      display: none;
+    }
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid #ddd;
+      background: #fafafa;
+    }
+    .sidebar-ask {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .sidebar-ask label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #333;
+    }
+    .sidebar-ask input {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    .sidebar-ask button {
+      padding: 10px 16px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .sidebar-ask button:hover {
+      background: #45a049;
+    }
+    .sidebar-ask button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+    .sidebar-notice {
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: #666;
+      font-style: italic;
+      background: #f8f8f8;
+      border-bottom: 1px solid #ddd;
+    }
+    .sidebar-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .bouquet-entry {
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    .bouquet-entry:hover {
+      border-color: #ccc;
+      background: #f9f9f9;
+    }
+    .bouquet-entry.active {
+      border-color: #4CAF50;
+      background: #f0fff0;
+    }
+    .bouquet-entry .bouquet-name {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 6px;
+      font-size: 1rem;
+    }
+    .bouquet-entry .bouquet-reason {
+      display: none;
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #eee;
+    }
+    .bouquet-entry.expanded .bouquet-reason {
+      display: block;
+    }
+    .bouquet-entry .bouquet-note {
+      font-size: 0.8rem;
+      color: #884400;
+      background: #fff8e1;
+      padding: 6px 8px;
+      border-radius: 3px;
+      margin-top: 8px;
+      display: inline-block;
+    }
+    .bouquet-entry .bouquet-meta {
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 6px;
+    }
+    /* Briefly marks the existing entry a reused answer points at, so the
+       user can see which one the server matched. */
+    .bouquet-entry.flash {
+      animation: flash 1.6s ease-out;
+    }
+    @keyframes flash {
+      0%, 100% { border-color: #eee; background: white; }
+      20%      { border-color: #1565c0; background: #e3f2fd; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bouquet-entry.flash { animation: none; border-color: #1565c0; }
+      .card { transition: none; }
+    }
+    #sidebarToggle {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      /* Above the sidebar (1001), or opening the panel buries the only
+         control that closes it again. */
+      z-index: 1002;
+      padding: 10px 16px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    #sidebarToggle:hover {
+      background: #45a049;
+    }
+    #main-content {
+      flex: 1;
+    }
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+    }
+    .overlay.active {
+      display: block;
+    }
+    /* A dimming backdrop belongs to the mobile drawer. Beside a docked
+       desktop panel it only greys out the gallery the sidebar points at. */
+    @media (min-width: 701px) {
+      .overlay.active {
+        display: none;
+      }
+    }
+    @media (max-width: 700px) {
+      .page-container {
+        flex-direction: column;
+      }
+      #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        margin: 0;
+        border-radius: 0;
+        z-index: 1001;
+      }
+      #sidebar.collapsed {
+        display: none;
+      }
+      #sidebarToggle {
+        z-index: 1002;
+      }
+      #main-content {
+        width: 100%;
+      }
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
   </style>
 </head>
 <body>
-  <h1 class="page-title">Flower Gallery</h1>
-  <div id="gallery"></div>
-  <p id="status" class="status">Loading gallery…</p>
+  <button id="sidebarToggle" aria-expanded="false" aria-controls="sidebar">
+    Show Bouquet Recommendations
+  </button>
+  
+  <div class="overlay" id="overlay"></div>
+  
+  <div class="page-container">
+    <aside id="sidebar" class="collapsed" aria-label="Bouquet recommendations">
+      <div class="sidebar-header">
+        <h2 style="margin: 0; font-size: 1.2rem; color: #333;">Bouquet Recommendations</h2>
+      </div>
+      <div class="sidebar-ask">
+        <label for="occasionInput">Ask for an occasion:</label>
+        <input type="text" id="occasionInput" placeholder="e.g., flowers for a wedding" maxlength="100">
+        <button id="askButton">Get Recommendation</button>
+      </div>
+      <div id="recommendNotice" class="sidebar-notice" role="status" aria-live="polite" style="display: none;"></div>
+      <div class="sidebar-feed" id="bouquetFeed"></div>
+    </aside>
+    
+    <main id="main-content">
+      <h1 class="page-title">Flower Gallery</h1>
+      <div id="gallery"></div>
+      <p id="status" class="status">Loading gallery...</p>
+    </main>
+  </div>
 
   <script>
     const gallery = document.getElementById('gallery');
     const status = document.getElementById('status');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const overlay = document.getElementById('overlay');
+    const bouquetFeed = document.getElementById('bouquetFeed');
+    const occasionInput = document.getElementById('occasionInput');
+    const askButton = document.getElementById('askButton');
+    const recommendNotice = document.getElementById('recommendNotice');
 
+    let allFlowers = [];
+    let currentHighlight = null;
+
+    // The feed's source of truth. Reading state back out of the rendered DOM
+    // loses whatever the markup doesn't carry, so keep the array itself.
+    let bouquets = [];
+
+    // Toggle sidebar
+    function toggleSidebar() {
+      const isCollapsed = sidebar.classList.contains('collapsed');
+      if (isCollapsed) {
+        sidebar.classList.remove('collapsed');
+        sidebarToggle.setAttribute('aria-expanded', 'true');
+        overlay.classList.add('active');
+      } else {
+        sidebar.classList.add('collapsed');
+        sidebarToggle.setAttribute('aria-expanded', 'false');
+        overlay.classList.remove('active');
+      }
+    }
+
+    sidebarToggle.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+
+    // Close sidebar on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !sidebar.classList.contains('collapsed')) {
+        toggleSidebar();
+      }
+    });
+
+    // Load gallery
     async function loadGallery() {
       let data;
       try {
@@ -115,6 +392,7 @@
         for (const flower of color.flowers) {
           const card = document.createElement('div');
           card.className = 'card';
+          card.dataset.file = flower.file;
 
           const link = document.createElement('a');
           link.href = 'image.html?file=' + encodeURIComponent(flower.file);
@@ -132,6 +410,8 @@
           card.appendChild(link);
           card.appendChild(title);
           grid.appendChild(card);
+
+          allFlowers.push({ file: flower.file, name: flower.name, element: card });
         }
 
         section.appendChild(grid);
@@ -139,7 +419,207 @@
       }
 
       status.remove();
+      loadBouquets();
     }
+
+    // Load bouquets feed
+    async function loadBouquets() {
+      try {
+        const response = await fetch('/api/bouquets');
+        if (response.ok) {
+          const data = await response.json();
+          bouquets = data.bouquets || [];
+          renderBouquetFeed(bouquets);
+        }
+      } catch (error) {
+        console.error('Failed to load bouquets:', error);
+      }
+    }
+
+    // One place that knows how a notice looks. aria-live so a screen reader
+    // hears the result of an ask it cannot see.
+    function showNotice(message, kind) {
+      const palette = {
+        info: { color: '#1565c0', background: '#e3f2fd' },
+        warn: { color: '#884400', background: '#fff8e1' },
+        error: { color: '#d32f2f', background: '#ffebee' },
+      };
+      const style = palette[kind] || palette.info;
+      recommendNotice.textContent = message;
+      recommendNotice.style.display = 'block';
+      recommendNotice.style.color = style.color;
+      recommendNotice.style.background = style.background;
+    }
+
+    function hideNotice() {
+      recommendNotice.style.display = 'none';
+    }
+
+    // Render bouquet feed entries
+    function renderBouquetFeed(entries) {
+      const bouquets = entries;
+      bouquetFeed.innerHTML = '';
+
+      if (bouquets.length === 0) {
+        const empty = document.createElement('p');
+        empty.textContent = 'No bouquets yet. Ask for a recommendation!';
+        empty.style.textAlign = 'center';
+        empty.style.color = '#888';
+        empty.style.padding = '20px';
+        bouquetFeed.appendChild(empty);
+        return;
+      }
+
+      bouquets.forEach(bouquet => {
+        const entry = document.createElement('div');
+        entry.className = 'bouquet-entry';
+        entry.dataset.id = bouquet.id;
+        entry.dataset.flowers = JSON.stringify(bouquet.flowers || []);
+
+        const name = document.createElement('div');
+        name.className = 'bouquet-name';
+        name.textContent = bouquet.name;
+        entry.appendChild(name);
+
+        const reason = document.createElement('div');
+        reason.className = 'bouquet-reason';
+        reason.textContent = bouquet.reason;
+        entry.appendChild(reason);
+
+        if (bouquet.note && bouquet.note.trim()) {
+          const note = document.createElement('div');
+          note.className = 'bouquet-note';
+          note.textContent = bouquet.note;
+          entry.appendChild(note);
+        }
+
+        const meta = document.createElement('div');
+        meta.className = 'bouquet-meta';
+        meta.textContent = bouquet.occasion;
+        entry.appendChild(meta);
+
+        entry.addEventListener('click', () => toggleBouquetHighlight(bouquet, entry));
+        
+        bouquetFeed.appendChild(entry);
+      });
+    }
+
+    // Toggle bouquet highlight in gallery
+    function toggleBouquetHighlight(bouquet, entry) {
+      const flowers = bouquet.flowers || [];
+      
+      // If clicking the same bouquet again, clear highlight
+      if (currentHighlight && currentHighlight.id === bouquet.id) {
+        clearHighlight();
+        return;
+      }
+
+      // Clear previous highlight
+      clearHighlight();
+
+      // Mark all cards as dimmed
+      allFlowers.forEach(f => {
+        f.element.classList.add('dimmed');
+        f.element.classList.remove('highlighted');
+      });
+
+      // Highlight the flowers in this bouquet
+      const highlightedFiles = new Set(flowers);
+      let firstCard = null;
+      
+      allFlowers.forEach(f => {
+        if (highlightedFiles.has(f.file)) {
+          f.element.classList.remove('dimmed');
+          f.element.classList.add('highlighted');
+          if (!firstCard) firstCard = f.element;
+        }
+      });
+
+      // Expand the clicked bouquet entry to show reason
+      entry.classList.add('expanded');
+
+      // Scroll to first highlighted card
+      if (firstCard) {
+        firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      currentHighlight = { id: bouquet.id, flowers, entry };
+    }
+
+    // Clear all highlights
+    function clearHighlight() {
+      allFlowers.forEach(f => {
+        f.element.classList.remove('dimmed', 'highlighted');
+      });
+      if (currentHighlight && currentHighlight.entry) {
+        currentHighlight.entry.classList.remove('expanded');
+      }
+      currentHighlight = null;
+    }
+
+    // Ask for recommendation
+    askButton.addEventListener('click', async () => {
+      const question = occasionInput.value.trim();
+      if (!question) return;
+
+      askButton.disabled = true;
+      askButton.textContent = 'Asking...';
+      hideNotice();
+
+      try {
+        const response = await fetch('/api/recommend', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question })
+        });
+
+        if (response.status === 501) {
+          showNotice('Recommendation service is not available yet. Try again later!', 'warn');
+        } else if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          showNotice(data.error || 'Failed to get recommendation.', 'error');
+        } else {
+          const data = await response.json();
+          if (data.bouquet) {
+            const existing = bouquets.findIndex(b => b.id === data.bouquet.id);
+
+            if (data.reused && existing !== -1) {
+              // The server reused an entry already in the feed. Adding it
+              // again would put the same bouquet in the list twice, which is
+              // precisely what reuse exists to prevent. Point at the one
+              // that is already there instead.
+              renderBouquetFeed(bouquets);
+              const entry = bouquetFeed.children[existing];
+              if (entry) {
+                entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                entry.classList.add('flash');
+                setTimeout(() => entry.classList.remove('flash'), 1600);
+              }
+              showNotice('Someone already asked this — showing that bouquet.', 'info');
+            } else {
+              bouquets.unshift({
+                ...data.bouquet,
+                id: data.bouquet.id || 'new-' + Date.now()
+              });
+              renderBouquetFeed(bouquets);
+            }
+            occasionInput.value = '';
+          }
+        }
+      } catch (error) {
+        showNotice('Error: ' + error.message, 'error');
+      } finally {
+        askButton.disabled = false;
+        askButton.textContent = 'Get Recommendation';
+      }
+    });
+
+    // Allow Enter key to submit
+    occasionInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        askButton.click();
+      }
+    });
 
     loadGallery();
   </script>
